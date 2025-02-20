@@ -1,44 +1,49 @@
-import { Api as GramJs, errors } from '../../../lib/gramjs';
+import { errors, Api as GramJs } from "../../../lib/gramjs";
 
-import type { RegularLangKey } from '../../../types/language';
-import type { RegularLangFnParameters } from '../../../util/localization';
+import type { RegularLangKey } from "../../../types/language";
+import type { RegularLangFnParameters } from "../../../util/localization";
 
-import { DEBUG } from '../../../config';
+import { DEBUG } from "../../../config";
 import {
-  DAY, getDays, getHours, getMinutes, HOUR, MINUTE,
-} from '../../../util/dates/units';
-import { getApiChatIdFromMtpPeer } from '../apiBuilders/peers';
+  DAY,
+  getDays,
+  getHours,
+  getMinutes,
+  HOUR,
+  MINUTE,
+} from "../../../util/dates/units";
+import { getApiChatIdFromMtpPeer } from "../apiBuilders/peers";
 
-const LOG_BACKGROUND = '#111111DD';
-const LOG_PREFIX_COLOR = '#E4D00A';
+const LOG_BACKGROUND = "#111111DD";
+const LOG_PREFIX_COLOR = "#E4D00A";
 const LOG_SUFFIX = {
-  INVOKE: '#49DBF5',
-  BEACON: '#F549DB',
-  RESPONSE: '#6887F7',
-  CONNECTING: '#E4D00A',
-  CONNECTED: '#26D907',
-  'CONNECTING ERROR': '#D1191C',
-  'INVOKE ERROR': '#D1191C',
-  UPDATE: '#0DD151',
-  'UNEXPECTED UPDATE': '#9C9C9C',
-  'UNEXPECTED RESPONSE': '#D1191C',
+  INVOKE: "#49DBF5",
+  BEACON: "#F549DB",
+  RESPONSE: "#6887F7",
+  CONNECTING: "#E4D00A",
+  CONNECTED: "#26D907",
+  "CONNECTING ERROR": "#D1191C",
+  "INVOKE ERROR": "#D1191C",
+  UPDATE: "#0DD151",
+  "UNEXPECTED UPDATE": "#9C9C9C",
+  "UNEXPECTED RESPONSE": "#D1191C",
 };
 
 const ERROR_KEYS: Record<string, RegularLangKey> = {
-  PHONE_NUMBER_INVALID: 'ErrorPhoneNumberInvalid',
-  PHONE_CODE_INVALID: 'ErrorCodeInvalid',
-  PASSWORD_HASH_INVALID: 'ErrorIncorrectPassword',
-  PHONE_PASSWORD_FLOOD: 'ErrorPasswordFlood',
-  PHONE_NUMBER_BANNED: 'ErrorPhoneBanned',
-  EMAIL_UNCONFIRMED: 'ErrorEmailUnconfirmed',
-  EMAIL_HASH_EXPIRED: 'ErrorEmailHashExpired',
-  NEW_SALT_INVALID: 'ErrorNewSaltInvalid',
-  SRP_PASSWORD_CHANGED: 'ErrorPasswordChanged',
-  CODE_INVALID: 'ErrorEmailCodeInvalid',
-  PASSWORD_MISSING: 'ErrorPasswordMissing',
+  PHONE_NUMBER_INVALID: "ErrorPhoneNumberInvalid",
+  PHONE_CODE_INVALID: "ErrorCodeInvalid",
+  PASSWORD_HASH_INVALID: "ErrorIncorrectPassword",
+  PHONE_PASSWORD_FLOOD: "ErrorPasswordFlood",
+  PHONE_NUMBER_BANNED: "ErrorPhoneBanned",
+  EMAIL_UNCONFIRMED: "ErrorEmailUnconfirmed",
+  EMAIL_HASH_EXPIRED: "ErrorEmailHashExpired",
+  NEW_SALT_INVALID: "ErrorNewSaltInvalid",
+  SRP_PASSWORD_CHANGED: "ErrorPasswordChanged",
+  CODE_INVALID: "ErrorEmailCodeInvalid",
+  PASSWORD_MISSING: "ErrorPasswordMissing",
 };
 
-export type MessageRepairContext = Pick<GramJs.TypeMessage, 'peerId' | 'id'>;
+export type MessageRepairContext = Pick<GramJs.TypeMessage, "peerId" | "id">;
 export type MediaRepairContext = MessageRepairContext;
 
 export type WrappedError<T extends Error = Error> = {
@@ -48,7 +53,12 @@ export type WrappedError<T extends Error = Error> = {
 };
 
 export function resolveMessageApiChatId(mtpMessage: GramJs.TypeMessage) {
-  if (!(mtpMessage instanceof GramJs.Message || mtpMessage instanceof GramJs.MessageService)) {
+  if (
+    !(
+      mtpMessage instanceof GramJs.Message ||
+      mtpMessage instanceof GramJs.MessageService
+    )
+  ) {
     return undefined;
   }
 
@@ -56,9 +66,12 @@ export function resolveMessageApiChatId(mtpMessage: GramJs.TypeMessage) {
 }
 
 export function isChatFolder(
-  filter?: GramJs.TypeDialogFilter,
+  filter?: GramJs.TypeDialogFilter
 ): filter is GramJs.DialogFilter | GramJs.DialogFilterChatlist {
-  return filter instanceof GramJs.DialogFilter || filter instanceof GramJs.DialogFilterChatlist;
+  return (
+    filter instanceof GramJs.DialogFilter ||
+    filter instanceof GramJs.DialogFilterChatlist
+  );
 }
 
 export function serializeBytes(value: Buffer) {
@@ -66,35 +79,29 @@ export function serializeBytes(value: Buffer) {
 }
 
 export function deserializeBytes(value: string) {
-  return Buffer.from(value, 'binary');
+  return Buffer.from(value, "binary");
 }
 
-export function log(suffix: keyof typeof LOG_SUFFIX, ...data: any) {
-  /* eslint-disable max-len */
-  /* eslint-disable no-console */
-  const func = suffix === 'UNEXPECTED RESPONSE' ? console.error
-    : suffix === 'INVOKE ERROR' || suffix === 'UNEXPECTED UPDATE' ? console.warn : console.log;
-  /* eslint-enable no-console */
-  func(
-    `%cGramJS%c${suffix}`,
-    `color: ${LOG_PREFIX_COLOR}; background: ${LOG_BACKGROUND}; padding: 0.25rem; border-radius: 0.25rem;`,
-    `color: ${LOG_SUFFIX[suffix]}; background: ${LOG_BACKGROUND}; padding: 0.25rem; border-radius: 0.25rem; margin-left: 0.25rem;`,
-    ...data,
+export function log(suffix: keyof typeof LOG_SUFFIX, ...data: any) {}
+
+export function isResponseUpdate<T extends GramJs.AnyRequest>(
+  result: T["__response"]
+): result is GramJs.TypeUpdate {
+  return (
+    result instanceof GramJs.UpdatesTooLong ||
+    result instanceof GramJs.UpdateShortMessage ||
+    result instanceof GramJs.UpdateShortChatMessage ||
+    result instanceof GramJs.UpdateShort ||
+    result instanceof GramJs.UpdatesCombined ||
+    result instanceof GramJs.Updates ||
+    result instanceof GramJs.UpdateShortSentMessage
   );
-  /* eslint-enable max-len */
-}
-
-export function isResponseUpdate<T extends GramJs.AnyRequest>(result: T['__response']): result is GramJs.TypeUpdate {
-  return result instanceof GramJs.UpdatesTooLong || result instanceof GramJs.UpdateShortMessage
-    || result instanceof GramJs.UpdateShortChatMessage || result instanceof GramJs.UpdateShort
-    || result instanceof GramJs.UpdatesCombined || result instanceof GramJs.Updates
-    || result instanceof GramJs.UpdateShortSentMessage;
 }
 
 export function checkErrorType(error: unknown): error is Error {
   if (!(error instanceof Error)) {
     // eslint-disable-next-line no-console
-    if (DEBUG) console.warn('Unexpected error type', error);
+    if (DEBUG) console.warn("Unexpected error type", error);
     return false;
   }
 
@@ -104,16 +111,17 @@ export function checkErrorType(error: unknown): error is Error {
 export function wrapError<T extends Error>(error: T): WrappedError<T> {
   let messageKey: RegularLangFnParameters | undefined;
 
-  const errorMessage = error instanceof errors.RPCError ? error.errorMessage : undefined;
+  const errorMessage =
+    error instanceof errors.RPCError ? error.errorMessage : undefined;
 
   if (error instanceof errors.FloodWaitError) {
     messageKey = {
-      key: 'ErrorFloodTime',
+      key: "ErrorFloodTime",
       variables: { time: formatWait(error.seconds) },
     };
   } else if (error instanceof errors.PasswordFreshError) {
     messageKey = {
-      key: 'ErrorPasswordFresh',
+      key: "ErrorPasswordFresh",
       variables: { time: formatWait(error.seconds) },
     };
   } else if (error instanceof errors.RPCError) {
@@ -125,12 +133,12 @@ export function wrapError<T extends Error>(error: T): WrappedError<T> {
   if (!messageKey) {
     if (error.message) {
       messageKey = {
-        key: 'ErrorUnexpectedMessage',
+        key: "ErrorUnexpectedMessage",
         variables: { error: error.message },
       };
     } else {
       messageKey = {
-        key: 'ErrorUnexpected',
+        key: "ErrorUnexpected",
       };
     }
   }
@@ -145,7 +153,7 @@ export function wrapError<T extends Error>(error: T): WrappedError<T> {
 function formatWait(seconds: number): RegularLangFnParameters {
   if (seconds < MINUTE) {
     return {
-      key: 'Seconds',
+      key: "Seconds",
       variables: { count: seconds },
       options: { pluralValue: seconds },
     };
@@ -154,7 +162,7 @@ function formatWait(seconds: number): RegularLangFnParameters {
   if (seconds < HOUR) {
     const minutes = getMinutes(seconds);
     return {
-      key: 'Minutes',
+      key: "Minutes",
       variables: { count: minutes },
       options: { pluralValue: minutes },
     };
@@ -163,7 +171,7 @@ function formatWait(seconds: number): RegularLangFnParameters {
   if (seconds < DAY) {
     const hours = getHours(seconds);
     return {
-      key: 'Hours',
+      key: "Hours",
       variables: { count: hours },
       options: { pluralValue: hours },
     };
@@ -172,7 +180,7 @@ function formatWait(seconds: number): RegularLangFnParameters {
   const days = getDays(seconds);
 
   return {
-    key: 'Days',
+    key: "Days",
     variables: { count: days },
     options: { pluralValue: days },
   };

@@ -1,5 +1,5 @@
 .TextFormatter {
-  transform: translate(-50%, -3.25rem);
+  transform: translate(0, -3.25rem);
   z-index: 1;
 
   &,
@@ -73,12 +73,20 @@
 
     &::before {
       left: 0;
-      background: linear-gradient(to right, var(--color-background) 0.25rem, transparent 1rem);
+      background: linear-gradient(
+        to right,
+        var(--color-background) 0.25rem,
+        transparent 1rem
+      );
     }
 
     &::after {
       right: 0;
-      background: linear-gradient(to left, var(--color-background) 0.25rem, transparent 1rem);
+      background: linear-gradient(
+        to left,
+        var(--color-background) 0.25rem,
+        transparent 1rem
+      );
     }
 
     &.mask-left {
